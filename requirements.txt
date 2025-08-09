@@ -3,12 +3,9 @@ numpy
 pillow
 matplotlib
 opencv-python-headless==4.10.0.84
-tensorflow-cpu==2.16.1
+tensorflow==2.20.0rc0
 requests
 python-dotenv
 streamlit-image-select
 replicate
-
---extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.3.1
-torchvision==0.18.1
+torch==2.5.1
