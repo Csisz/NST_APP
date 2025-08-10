@@ -224,7 +224,7 @@ prompt_presets = {
 negative_presets = {
     "Starry Night": "cartoon, surreal architecture, distorted proportions, extra objects, abstract shapes",
     "The Scream": "cartoon, extra objects, warped anatomy, abstract shapes unrelated to the scene",
-    "Great Wave of Kanagawa": ("cartoon, low-detail waves, incorrect water flow, extra objects, distorted proportions, unrealistic colors, elements unrelated to traditional Japanese art"
+    "Great Wave of Kanagawa": ("cartoon, low-detail waves, incorrect water flow, extra objects, distorted proportions, unrealistic colors, elements unrelated to traditional Japanese art",
     ),
 
 }
