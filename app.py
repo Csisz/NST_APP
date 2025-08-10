@@ -211,12 +211,22 @@ prompt_presets = {
         "preserving the original composition and perspective, "
         "with bold, wavy brushstrokes, swirling lines that distort the sky and landscape, "
         "intense oranges and deep blues, and a dramatic, emotional atmosphere."
+    ),    
+    "Great Wave of Kanagawa": (
+        "Repaint this image in the style of Hokusai’s The Great Wave off Kanagawa, "
+        "preserving the original composition and perspective, "
+        "with powerful, curling ocean waves, bold outlines, "
+        "crisp details, and a traditional Japanese woodblock print aesthetic, "
+        "featuring deep indigo blues, soft gradients, and dramatic movement."
     ),
 }
 
 negative_presets = {
     "Starry Night": "cartoon, surreal architecture, distorted proportions, extra objects, abstract shapes",
     "The Scream": "cartoon, extra objects, warped anatomy, abstract shapes unrelated to the scene",
+    "Great Wave of Kanagawa": ("cartoon, low-detail waves, incorrect water flow, extra objects, distorted proportions, unrealistic colors, elements unrelated to traditional Japanese art"
+    ),
+
 }
 
 DEFAULT_STRENGTH = 0.20  # hidden control
