@@ -180,12 +180,15 @@ def get_model_for_style(style_name: str):
 style_paths = {
     "Starry Night": "images/Starry_Night_S.JPG",
     "The Scream": "images/Edvard_Munch_The_Scream.jpg",
+    "Great Wave of Kanagawa": "images/The_Great_Wave_off_Kanagawa.jpg",  # NEW
 }
 
 style_weights = {
     "The Scream": "models/scream_model_weights_step_105000.weights.h5",
     "Starry Night": "models/model_weights_step_127000.weights.h5",
+    "Great Wave of Kanagawa": "models/GreatWave_model_weights_step_28000.weights.h5",  # NEW
 }
+
 
 # Preloaded gallery images
 gallery_images = {
