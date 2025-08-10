@@ -3,10 +3,22 @@ import numpy as np
 import tensorflow as tf
 from PIL import Image
 import streamlit as st
+import replicate 
 
 # Make Streamlit secrets available as env vars for modules that only read os.getenv()
 if hasattr(st, "secrets") and "REPLICATE_API_TOKEN" in st.secrets:
     os.environ["REPLICATE_API_TOKEN"] = st.secrets["REPLICATE_API_TOKEN"]
+
+def get_secret(name):
+    v = st.secrets.get(name) if hasattr(st, "secrets") else None
+    if not v:
+        v = os.getenv(name)
+    return v.strip() if isinstance(v, str) else None
+
+REPLICATE_API_TOKEN = get_secret("REPLICATE_API_TOKEN")
+client = replicate.Client(api_token=REPLICATE_API_TOKEN)
+
+st.write("replicate token starts with:", (st.secrets.get("REPLICATE_API_TOKEN","")[:4]))
 
 
 # Optional patches / local modules
