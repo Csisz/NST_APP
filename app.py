@@ -4,6 +4,11 @@ import tensorflow as tf
 from PIL import Image
 import streamlit as st
 
+# Make Streamlit secrets available as env vars for modules that only read os.getenv()
+if hasattr(st, "secrets") and "REPLICATE_API_TOKEN" in st.secrets:
+    os.environ["REPLICATE_API_TOKEN"] = st.secrets["REPLICATE_API_TOKEN"]
+
+
 # Optional patches / local modules
 import patch_basicsr  # noqa: F401
 # patch_basicsr.patch_basicsr()

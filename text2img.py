@@ -6,11 +6,24 @@ load_dotenv()
 DEFAULT_TXT2IMG = "replicate/van-gogh-flux"
 DEFAULT_IMG2IMG = "replicate/van-gogh-flux"   # full version id should come from .env
 
-MODEL_ID = os.getenv("REPLICATE_TXT2IMG_VERSION", DEFAULT_TXT2IMG).strip() or DEFAULT_TXT2IMG
-if not MODEL_ID.startswith(DEFAULT_TXT2IMG):
-    MODEL_ID = DEFAULT_TXT2IMG
+import os
+try:
+    import streamlit as st
+except Exception:
+    st = None
 
-IMG2IMG_MODEL = os.getenv("REPLICATE_IMG2IMG_VERSION", DEFAULT_IMG2IMG).strip() or DEFAULT_IMG2IMG
+def get_cfg(name: str, default: str | None = None) -> str | None:
+    # prefer Streamlit secrets in the cloud, else env/.env locally
+    v = None
+    if st and hasattr(st, "secrets"):
+        v = st.secrets.get(name)
+    if not v:
+        v = os.getenv(name)
+    return v.strip() if isinstance(v, str) else default
+
+# replace your current uses:
+MODEL_ID = get_cfg("REPLICATE_TXT2IMG_VERSION", "replicate/van-gogh-flux")
+IMG2IMG_MODEL = get_cfg("REPLICATE_IMG2IMG_VERSION", "replicate/van-gogh-flux")
 
 def generate_image_from_prompt_and_image(
     prompt: str,
@@ -23,7 +36,8 @@ def generate_image_from_prompt_and_image(
     seed: int | None = None,
     model_id: str | None = None,
 ):
-    client = replicate.Client(api_token=os.getenv("REPLICATE_API_TOKEN"))
+    # client = replicate.Client(api_token=os.getenv("REPLICATE_API_TOKEN"))
+    client = replicate.Client(api_token=get_cfg("REPLICATE_API_TOKEN"))
     image_input = open(image_path_or_url, "rb") if os.path.exists(image_path_or_url) else image_path_or_url
 
     inputs = {
