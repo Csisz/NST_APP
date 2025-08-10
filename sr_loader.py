@@ -1,10 +1,8 @@
-# sr_loader.py
-# Loads your ArtSRx2 model and fills it with a training checkpoint dict.
+# Loads ArtSRx2 model and fills it with a training checkpoint dict.
 
 import torch
 import torch.nn as nn
 
-# ----- Model defs must match training EXACTLY -----
 class ResBlock(nn.Module):
     def __init__(self, c):
         super().__init__()
@@ -37,7 +35,7 @@ class ArtSRx2(nn.Module):
         f = self.up(f)
         out = self.tail(f)
         return out
-# ---------------------------------------------------
+    
 
 def get_device(pref=None):
     if pref in ("cuda", "cpu"):

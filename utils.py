@@ -3,7 +3,7 @@ import numpy as np
 from PIL import Image
 import cv2
 
-# === Custom Layers and Model ===
+#  Custom Layers and Model 
 class InstanceNormalization(tf.keras.layers.Layer):
     def __init__(self, epsilon=1e-5):
         super().__init__()
@@ -58,7 +58,7 @@ class StyleTransferNet(tf.keras.Model):
     def call(self, inputs):
         return self.model(inputs)
 
-# === Model Loaders ===
+#  Model Loaders 
 def load_custom_model(weights_path):
     model = StyleTransferNet()
     dummy_input = tf.zeros([1, 256, 256, 3])
@@ -74,7 +74,7 @@ def load_saved_model(h5_weights_path):
     return model
 
 
-# === Image Enhancement & Filtering ===
+#  Image Enhancement & Filtering 
 def enhance_image(img_path, brightness=30, contrast=1.1, sat_boost_blue_yellow=1.3, sat_drop_others=0.9, white_boost=0.1):
     img = cv2.imread(img_path)
     if img is None:
@@ -111,7 +111,7 @@ def grayscale_except_blue_yellow(img,
     result = np.where(mask[..., None] > 0, img, gray_rgb)
     return result
 
-# === Image Preprocessing ===
+#  Image Preprocessing 
 def load_and_preprocess(input, is_array=False):
     if not is_array:
         img = Image.open(input).convert('RGB')

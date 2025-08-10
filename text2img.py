@@ -13,7 +13,6 @@ except Exception:
     st = None
 
 def get_cfg(name: str, default: str | None = None) -> str | None:
-    # prefer Streamlit secrets in the cloud, else env/.env locally
     v = None
     if st and hasattr(st, "secrets"):
         v = st.secrets.get(name)
@@ -21,7 +20,6 @@ def get_cfg(name: str, default: str | None = None) -> str | None:
         v = os.getenv(name)
     return v.strip() if isinstance(v, str) else default
 
-# replace your current uses:
 MODEL_ID = get_cfg("REPLICATE_TXT2IMG_VERSION", "replicate/van-gogh-flux")
 IMG2IMG_MODEL = get_cfg("REPLICATE_IMG2IMG_VERSION", "replicate/van-gogh-flux")
 
@@ -29,7 +27,7 @@ def generate_image_from_prompt_and_image(
     prompt: str,
     image_path_or_url: str,
     negative_prompt: str = "",
-    strength: float = 0.3,          # lower default preserves composition
+    strength: float = 0.3,          
     guidance_scale: float = 7.5,
     width: int | None = None,
     height: int | None = None,
@@ -44,18 +42,16 @@ def generate_image_from_prompt_and_image(
         "image": image_input,
         "prompt": prompt,
         "negative_prompt": negative_prompt,
-        "prompt_strength": float(strength),   # 0.35–0.5 preserves content
-        "guidance_scale": guidance_scale,     # Flux likes ~2–3.5
-        "model": "schnell",                   # or "dev" for slower, finer detail
+        "prompt_strength": float(strength),  
+        "guidance_scale": guidance_scale,    
+        "model": "schnell",                  
     }
 
-    # Only set custom sizing when BOTH are provided
     if width and height:
         inputs["aspect_ratio"] = "custom"
         inputs["width"] = int(width)
         inputs["height"] = int(height)
 
-    # Don’t send nulls to Replicate (prevents 422s like aspect_ratio: null)
     inputs = {k: v for k, v in inputs.items() if v is not None}
     
     if seed is not None:
@@ -63,8 +59,6 @@ def generate_image_from_prompt_and_image(
 
     mid = model_id or IMG2IMG_MODEL
     try:
-        # return URLs instead of FileOutput objects
-        # out = client.run(mid, input=inputs, use_file_output=False)
         out = client.run(mid, input=inputs, use_file_output=False)
     except replicate.exceptions.ReplicateError as e:
         if "404" in str(e):

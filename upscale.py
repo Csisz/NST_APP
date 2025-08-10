@@ -16,7 +16,6 @@ def upscale_image(input_path):
                 input={"image": image_file}
             )
 
-        # ✅ Ensure it’s a string URL
         return str(output_url[0]) if isinstance(output_url, list) else str(output_url)
 
     except Exception as e:

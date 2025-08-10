@@ -1,4 +1,3 @@
-# local_upscale.py
 # Local x2 super-resolution using your ArtSRx2 checkpoint.
 
 import os

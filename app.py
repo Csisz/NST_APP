@@ -21,27 +21,20 @@ client = replicate.Client(api_token=REPLICATE_API_TOKEN)
 st.write("replicate token starts with:", (st.secrets.get("REPLICATE_API_TOKEN","")[:4]))
 
 
-# Optional patches / local modules
-import patch_basicsr  # noqa: F401
-# patch_basicsr.patch_basicsr()
-
+import patch_basicsr
 from dotenv import load_dotenv
 load_dotenv()
-
 import requests
-
-# Project modules (keep your existing implementations)
 from utils import (
     load_saved_model,
     enhance_image,
     grayscale_except_blue_yellow,
     load_and_preprocess,
 )
-from upscale import upscale_image  # Replicate/cloud
-from local_upscale import upscale_image_local  # Local PyTorch x2
-from text2img import generate_image_from_prompt_and_image  # img2img
+from upscale import upscale_image  
+from local_upscale import upscale_image_local  
+from text2img import generate_image_from_prompt_and_image  
 
-# Try to load clickable image gallery component
 try:
     from streamlit_image_select import image_select
     HAS_IMG_SELECT = True
@@ -114,8 +107,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-
-# Centered loading overlay (replaces st.spinner)
 from contextlib import contextmanager
 
 @contextmanager
@@ -180,17 +171,15 @@ def get_model_for_style(style_name: str):
 style_paths = {
     "Starry Night": "images/Starry_Night_S.JPG",
     "The Scream": "images/Edvard_Munch_The_Scream.jpg",
-    "Great Wave of Kanagawa": "images/The_Great_Wave_off_Kanagawa.jpg",  # NEW
+    "Great Wave of Kanagawa": "images/The_Great_Wave_off_Kanagawa.jpg",
 }
 
 style_weights = {
     "The Scream": "models/scream_model_weights_step_105000.weights.h5",
     "Starry Night": "models/model_weights_step_127000.weights.h5",
-    "Great Wave of Kanagawa": "models/GreatWave_model_weights_step_28000.weights.h5",  # NEW
+    "Great Wave of Kanagawa": "models/GreatWave_model_weights_step_45500.weights.h5",
 }
 
-
-# Preloaded gallery images
 gallery_images = {
     "Budapest Parliament (Sunset)": "images/budapest_parliament_sunset.jpg",
     "Lakeside Sunset": "images/lakeside_sunset.jpg",
@@ -229,13 +218,12 @@ negative_presets = {
 
 }
 
-DEFAULT_STRENGTH = 0.20  # hidden control
+DEFAULT_STRENGTH = 0.20
 
 
 # ---------------- UI ----------------
 st.title("Neural Style Transfer")
 
-# Theme toggle (stack it near the title)
 mode = st.radio("Theme", ["Light", "Dark"], horizontal=True, index=1, key="theme_mode")
 
 LIGHT = dict(bg="#ffffff", text="#111827", panel="#f8fafc",
@@ -268,7 +256,6 @@ section.main > div, .st-emotion-cache-18ni7ap, .stSidebar, .stTabs {{ background
 """, unsafe_allow_html=True)
 
 
-# (1) Choose a style image
 st.subheader("1️⃣ Choose a Style Image")
 st.caption("Click a style image below to select.")
 
@@ -291,7 +278,6 @@ if style_imgs and HAS_IMG_SELECT:
                 select_style(n)
                 break
 else:
-    # Fallback radio if component isn't available
     selected_style_name = st.radio("Pick a style:", list(style_paths.keys()), horizontal=True)
     if selected_style_name:
         select_style(selected_style_name)
@@ -299,14 +285,13 @@ else:
 if st.session_state.selected_style:
     st.success(f"✅ You selected: {st.session_state.selected_style} ✅")
 
-# --- Source choice: default to Upload ---
 if "image_source_mode" not in st.session_state:
     st.session_state.image_source_mode = "Upload"  # default
 
 source = st.radio(
     "Choose where to pick your image from:",
     ["Gallery", "Upload"],
-    index=0,  # Upload first by default
+    index=0, 
     horizontal=True,
     key="image_source_mode",
 )
@@ -314,12 +299,10 @@ source = st.radio(
 st.subheader("2️⃣ Choose from gallery or upload your own")
 st.caption("You can upload an image or pick from the gallery — whichever you prefer.")
 
-# --- stacked layout: upload first, then gallery ---
 uploaded = st.file_uploader("Upload image", type=["jpg", "jpeg", "png"], key="uploader")
 
 st.markdown("**Or pick from the gallery:**")
 
-# default gallery selection (first item) so gallery_key always exists
 _default_gallery_key = next(iter(gallery_images.keys()))
 gallery_key = _default_gallery_key
 
@@ -335,18 +318,15 @@ if HAS_IMG_SELECT:
     )
 
     if chosen_gallery_img is not None:
-        # map chosen path back to the caption/key
         for name, path in gallery_images.items():
             if path == chosen_gallery_img:
                 gallery_key = name
                 break
 else:
-    # Fallback if image-select isn't available
     gallery_key = st.selectbox("Gallery image", list(gallery_images.keys()), key="gallery_key")
 
 st.divider()
 
-# --- Decide which image to use: uploaded > gallery ---
 if uploaded is not None:
     preview_img = Image.open(uploaded).convert("RGB")
     image_source_label = " (uploaded)"
@@ -354,28 +334,21 @@ else:
     preview_img = Image.open(gallery_images[gallery_key]).convert("RGB")
     image_source_label = f" (gallery: {gallery_key})"
 
-# Show preview
 st.image(preview_img, caption=f"Chosen image {image_source_label}", use_container_width=True)
 preview_img.save("temp_input.jpg")
-
-
 
 if not st.session_state.selected_style:
     st.warning("Please select a style image above first.")
     st.stop()
 
-# (3) Apply style
 st.subheader("3️⃣ Apply Style")
 
 with centered_loader("🖌️ Applying style…"):
-    # Load model for selected style (cached per style)
     model = get_model_for_style(st.session_state.selected_style)
 
-    # Enhance and preprocess
     original_img, enhanced_img = enhance_image("temp_input.jpg")
     grayscale_img = grayscale_except_blue_yellow(original_img)
 
-    # Run through model: return is in [0..1], convert to [0..255] uint8
     def run_model(arr_or_path):
         content = load_and_preprocess(arr_or_path, is_array=True)
         out = model(tf.constant(content))[0].numpy()
@@ -396,12 +369,10 @@ with v2:
 with v3:
     st.image(stylized, caption="Original Stylization", width=300)
 
-# Save each variant to disk so we can use them later (e.g., upscaling)
 Image.fromarray(stylized2).save("stylized_enhanced.jpg")
 Image.fromarray(stylized3).save("stylized_grayscale.jpg")
 Image.fromarray(stylized).save("stylized_original.jpg")
 
-# Single-choice selection for which variant to upscale
 variant_options = {
     "Enhanced Stylization": "stylized_enhanced.jpg",
     "Grayscale Stylization": "stylized_grayscale.jpg",
@@ -415,13 +386,11 @@ selected_variant_label = st.radio(
 )
 st.session_state["selected_variant_path"] = variant_options[selected_variant_label]
 
-# Show which one is selected
 st.info(f"Variant selected: {selected_variant_label}")
 
 stylized_img = Image.fromarray(stylized)
 stylized_img.save("stylized_output.jpg")
 
-# (4) Upscale
 st.subheader("4️⃣ Upscale")
 
 st.markdown(
@@ -439,14 +408,12 @@ if st.button("Upscale selected image"):
     with centered_loader("Upscaling…"):
         if engine.startswith("Local"):
             out_path = upscale_image_local(input_path, ckpt_path="art_srnet_x2.pth", tile=None)
-            # Ensure we store a file path for later download; convert PIL.Image to file if needed
             if isinstance(out_path, Image.Image):
                 _tmp = "upscaled_output_local.png"
                 try:
                     out_path.save(_tmp)
                     out_path = _tmp
                 except Exception:
-                    # As a fallback, convert via numpy
                     _arr = np.array(out_path.convert("RGB"))
                     Image.fromarray(_arr).save(_tmp)
                     out_path = _tmp
@@ -456,10 +423,8 @@ if st.button("Upscale selected image"):
             upscaled_url = upscale_image(input_path)
             st.session_state["upscaled_source"] = upscaled_url
             st.session_state["upscaled_is_local"] = False
-        # Clear any previous variation result when a new upscale is created
         st.session_state["variation_result_url"] = None
 
-# Always render the latest upscaled result (persist across reruns)
 up_src = st.session_state.get("upscaled_source")
 if up_src:
     if st.session_state.get("upscaled_is_local", False):
@@ -473,7 +438,6 @@ if up_src:
         st.image(up_src, caption="Upscaled (Replicate)", width=520)
         st.markdown(f"[Download upscaled image]({up_src})")
 
-# (5) Optional: Prompt-guided variation from the upscaled image (img2img)
 st.subheader("5️⃣ Optional: Style-guided Variation (img2img)")
 
 src = st.session_state.get("upscaled_source")
@@ -494,14 +458,10 @@ else:
         with centered_loader("✨ Generating image…"):
             try:
                 if st.session_state.get("upscaled_is_local", False):
-                    # local upscaled -> pass a local file path
                     init_image_path_or_url = src
                 else:
-                    # cloud upscaled -> we have a URL already
                     init_image_path_or_url = src
 
-                # If it's a local path (not URL), upload path or pass to API as file
-                # (generate_image_from_prompt_and_image should handle both)
                 result_url = generate_image_from_prompt_and_image(
                     image_path_or_url=src,
                     prompt=prompt,
@@ -514,11 +474,9 @@ else:
             except Exception as e:
                 st.error(f"Img2img failed: {e}")
 
-# Persistently render both the upscaled image and any generated variation
 up_src = st.session_state.get("upscaled_source")
 var_url = st.session_state.get("variation_result_url")
 if up_src:
-    # already rendered in step 4; keep it visible above
     pass
 if var_url:
     st.image(var_url, caption="Prompt + Upscaled (img2img)", width=520)
