@@ -477,29 +477,29 @@ else:
         strength = st.slider("Strength (how much to follow the prompt)", 0.05, 0.75, DEFAULT_STRENGTH, 0.20)
         seed = st.number_input("Seed (optional, -1 = random)", value=-1, step=1)
 
-        if st.button("🎇 Style Variations"):
-            with centered_loader("✨ Generating image…"):
-                try:
-                    if st.session_state.get("upscaled_is_local", False):
-                        # local upscaled -> pass a local file path
-                        init_image_path_or_url = src
-                    else:
-                        # cloud upscaled -> we have a URL already
-                        init_image_path_or_url = src
+    if st.button("🎇 Style Variations"):
+        with centered_loader("✨ Generating image…"):
+            try:
+                if st.session_state.get("upscaled_is_local", False):
+                    # local upscaled -> pass a local file path
+                    init_image_path_or_url = src
+                else:
+                    # cloud upscaled -> we have a URL already
+                    init_image_path_or_url = src
 
-                    # If it's a local path (not URL), upload path or pass to API as file
-                    # (generate_image_from_prompt_and_image should handle both)
-                    result_url = generate_image_from_prompt_and_image(
-                        image_path_or_url=src,
-                        prompt=prompt,
-                        negative_prompt=negative or None,
-                        strength=strength,
-                        seed=None if seed == -1 else int(seed),
-                    )
+                # If it's a local path (not URL), upload path or pass to API as file
+                # (generate_image_from_prompt_and_image should handle both)
+                result_url = generate_image_from_prompt_and_image(
+                    image_path_or_url=src,
+                    prompt=prompt,
+                    negative_prompt=negative or None,
+                    strength=strength,
+                    seed=None if seed == -1 else int(seed),
+                )
 
-                    st.session_state["variation_result_url"] = result_url
-                except Exception as e:
-                    st.error(f"Img2img failed: {e}")
+                st.session_state["variation_result_url"] = result_url
+            except Exception as e:
+                st.error(f"Img2img failed: {e}")
 
 # Persistently render both the upscaled image and any generated variation
 up_src = st.session_state.get("upscaled_source")
