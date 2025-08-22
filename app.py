@@ -56,6 +56,20 @@ def _file_exists(path: str) -> bool:
     except Exception:
         return False
 
+def _normalize_replicate_output(out):
+    # list/tuple -> first item
+    if isinstance(out, (list, tuple)):
+        out = out[0]
+    # file-like object from Replicate SDK
+    if hasattr(out, "url"):
+        try:
+            return out.url()
+        except TypeError:
+            # some SDKs return a string already
+            pass
+    # assume it's already a URL string
+    return str(out)
+
 
 # ---------------- Global page config & styles ----------------
 st.set_page_config(page_title="Neural Style Transfer", page_icon="🎨", layout="centered")
@@ -454,30 +468,52 @@ else:
         strength = st.slider("Strength (how much to follow the prompt)", 0.05, 0.75, DEFAULT_STRENGTH, 0.20)
         seed = st.number_input("Seed (optional, -1 = random)", value=-1, step=1)
 
-    if st.button("🎇 Style Variations"):
-        with centered_loader("✨ Generating image…"):
-            try:
-                if st.session_state.get("upscaled_is_local", False):
-                    init_image_path_or_url = src
-                else:
-                    init_image_path_or_url = src
+    # if st.button("Style Variations"):
+    #     with centered_loader("Generating image…"):
+    #         try:
+    #             if st.session_state.get("upscaled_is_local", False):
+    #                 init_image_path_or_url = src
+    #             else:
+    #                 init_image_path_or_url = src
 
-                result_url = generate_image_from_prompt_and_image(
-                    image_path_or_url=src,
-                    prompt=prompt,
-                    negative_prompt=negative or None,
-                    strength=strength,
-                    seed=None if seed == -1 else int(seed),
-                )
+    #             result_url = generate_image_from_prompt_and_image(
+    #                 image_path_or_url=src,
+    #                 prompt=prompt,
+    #                 negative_prompt=negative or None,
+    #                 strength=strength,
+    #                 seed=None if seed == -1 else int(seed),
+    #             )
 
-                st.session_state["variation_result_url"] = result_url
-            except Exception as e:
-                st.error(f"Img2img failed: {e}")
+    #             st.session_state["variation_result_url"] = result_url
+    #         except Exception as e:
+    #             st.error(f"Img2img failed: {e}")
+    if st.button("Style Variations"):
+        with centered_loader("Generating variation..."):
+            result = generate_image_from_prompt_and_image(
+                image_path_or_url=src,
+                prompt=prompt,
+                negative_prompt=negative or None,
+                strength=strength,       # slider value
+                model_id="black-forest-labs/flux-kontext-pro"
+            )
 
-up_src = st.session_state.get("upscaled_source")
-var_url = st.session_state.get("variation_result_url")
-if up_src:
-    pass
-if var_url:
-    st.image(var_url, caption="Prompt + Upscaled (img2img)", width=520)
-    st.markdown(f"[Download generated image]({var_url})")
+        img_url = _normalize_replicate_output(result)
+        st.session_state.variation_result_url = img_url     # keep for later use/download
+        st.image(img_url, caption="Stylized variation", use_container_width=True)
+
+
+if st.session_state.variation_result_url:
+    url = st.session_state.variation_result_url
+    # show again or offer download
+    st.image(url, caption="Result", use_container_width=True)
+
+    # optional: save locally or to tmp for a download button
+    import requests, tempfile, os
+    r = requests.get(url, timeout=60)
+    r.raise_for_status()
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as f:
+        f.write(r.content)
+        tmp_path = f.name
+    with open(tmp_path, "rb") as f:
+        st.download_button("Download stylized image", f, file_name="stylized.jpg")
+    os.remove(tmp_path)
