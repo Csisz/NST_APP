@@ -27,14 +27,13 @@ def generate_image_from_prompt_and_image(
     prompt: str,
     image_path_or_url: str,
     negative_prompt: str = "",
-    strength: float = 0.3,          
-    guidance_scale: float = 7.5,
+    strength: float = 0.5,          
+    guidance_scale: float = 8.5,
     width: int | None = None,
     height: int | None = None,
     seed: int | None = None,
     model_id: str | None = None,
 ):
-    # client = replicate.Client(api_token=os.getenv("REPLICATE_API_TOKEN"))
     client = replicate.Client(api_token=get_cfg("REPLICATE_API_TOKEN"))
     image_input = open(image_path_or_url, "rb") if os.path.exists(image_path_or_url) else image_path_or_url
 
@@ -42,21 +41,19 @@ def generate_image_from_prompt_and_image(
         "image": image_input,
         "prompt": prompt,
         "negative_prompt": negative_prompt,
-        "prompt_strength": float(strength),  
-        "guidance_scale": guidance_scale,    
-        "model": "schnell",                  
+        "prompt_strength": float(strength),   # Controls how much of the original image is kept
+        "guidance_scale": guidance_scale,     # Controls how strongly the prompt is followed
+        "num_inference_steps": 30,            # Controls quality/speed tradeoff
     }
 
-
     if width and height:
-        inputs["aspect_ratio"] = "custom"
         inputs["width"] = int(width)
         inputs["height"] = int(height)
 
-    inputs = {k: v for k, v in inputs.items() if v is not None}
-    
     if seed is not None:
         inputs["seed"] = seed
+
+    inputs = {k: v for k, v in inputs.items() if v is not None}
 
     mid = model_id or IMG2IMG_MODEL
     try:
