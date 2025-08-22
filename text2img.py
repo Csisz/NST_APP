@@ -3,8 +3,10 @@ import os, replicate
 from dotenv import load_dotenv
 load_dotenv()
 
-DEFAULT_TXT2IMG = "replicate/van-gogh-flux"
-DEFAULT_IMG2IMG = "replicate/van-gogh-flux"   # full version id should come from .env
+# DEFAULT_TXT2IMG = "replicate/van-gogh-flux"
+# DEFAULT_IMG2IMG = "replicate/van-gogh-flux"   # full version id should come from .env
+DEFAULT_TXT2IMG = "black-forest-labs/flux-kontext-pro:1d201198f8604c46a30829f17fe80fe6e914eaecba01ff62c5aa16a18f3d4b85"
+DEFAULT_IMG2IMG = "black-forest-labs/flux-kontext-pro:1d201198f8604c46a30829f17fe80fe6e914eaecba01ff62c5aa16a18f3d4b85"
 
 import os
 try:
@@ -20,8 +22,16 @@ def get_cfg(name: str, default: str | None = None) -> str | None:
         v = os.getenv(name)
     return v.strip() if isinstance(v, str) else default
 
-MODEL_ID = get_cfg("REPLICATE_TXT2IMG_VERSION", "replicate/van-gogh-flux")
-IMG2IMG_MODEL = get_cfg("REPLICATE_IMG2IMG_VERSION", "replicate/van-gogh-flux")
+MODEL_ID = get_cfg(
+    "REPLICATE_TXT2IMG_VERSION",
+    "black-forest-labs/flux-kontext-pro:1d201198f8604c46a30829f17fe80fe6e914eaecba01ff62c5aa16a18f3d4b85"
+)
+
+IMG2IMG_MODEL = get_cfg(
+    "REPLICATE_IMG2IMG_VERSION",
+    "black-forest-labs/flux-kontext-pro:1d201198f8604c46a30829f17fe80fe6e914eaecba01ff62c5aa16a18f3d4b85"
+)
+
 
 def generate_image_from_prompt_and_image(
     prompt: str,
