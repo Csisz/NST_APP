@@ -22,23 +22,58 @@ def get_cfg(name: str, default: str | None = None) -> str | None:
         v = os.getenv(name)
     return v.strip() if isinstance(v, str) else default
 
-MODEL_ID = get_cfg(
-    "REPLICATE_TXT2IMG_VERSION",
-    "black-forest-labs/flux-kontext-pro:1d201198f8604c46a30829f17fe80fe6e914eaecba01ff62c5aa16a18f3d4b85"
-)
+MODEL_ID = get_cfg("REPLICATE_TXT2IMG_VERSION", DEFAULT_TXT2IMG)
+IMG2IMG_MODEL = get_cfg("REPLICATE_IMG2IMG_VERSION", DEFAULT_IMG2IMG)
 
-IMG2IMG_MODEL = get_cfg(
-    "REPLICATE_IMG2IMG_VERSION",
-    "black-forest-labs/flux-kontext-pro:1d201198f8604c46a30829f17fe80fe6e914eaecba01ff62c5aa16a18f3d4b85"
-)
+# previouse def
+# def generate_image_from_prompt_and_image(
+#     prompt: str,
+#     image_path_or_url: str,
+#     negative_prompt: str = "",
+#     strength: float = 0.5,          
+#     guidance_scale: float = 8.5,
+#     width: int | None = None,
+#     height: int | None = None,
+#     seed: int | None = None,
+#     model_id: str | None = None,
+# ):
+#     client = replicate.Client(api_token=get_cfg("REPLICATE_API_TOKEN"))
+#     image_input = open(image_path_or_url, "rb") if os.path.exists(image_path_or_url) else image_path_or_url
 
+#     inputs = {
+#         "image": image_input,
+#         "prompt": prompt,
+#         "negative_prompt": negative_prompt,
+#         "prompt_strength": float(strength),   # Controls how much of the original image is kept
+#         "guidance_scale": guidance_scale,     # Controls how strongly the prompt is followed
+#         "num_inference_steps": 30,            # Controls quality/speed tradeoff
+#     }
+
+#     if width and height:
+#         inputs["width"] = int(width)
+#         inputs["height"] = int(height)
+
+#     if seed is not None:
+#         inputs["seed"] = seed
+
+#     inputs = {k: v for k, v in inputs.items() if v is not None}
+
+#     mid = model_id or IMG2IMG_MODEL
+#     try:
+#         out = client.run(mid, input=inputs, use_file_output=False)
+#     except replicate.exceptions.ReplicateError as e:
+#         if "404" in str(e):
+#             out = client.run(DEFAULT_IMG2IMG, input=inputs, use_file_output=False)
+#         else:
+#             raise
+#     return out[0] if isinstance(out, list) else out
 
 def generate_image_from_prompt_and_image(
     prompt: str,
     image_path_or_url: str,
     negative_prompt: str = "",
-    strength: float = 0.5,          
-    guidance_scale: float = 8.5,
+    strength: float = 0.5,          # typical: 0.3–0.8
+    guidance_scale: float = 8.5,    # typical: 7–12
     width: int | None = None,
     height: int | None = None,
     seed: int | None = None,
@@ -47,30 +82,51 @@ def generate_image_from_prompt_and_image(
     client = replicate.Client(api_token=get_cfg("REPLICATE_API_TOKEN"))
     image_input = open(image_path_or_url, "rb") if os.path.exists(image_path_or_url) else image_path_or_url
 
+    # Inputs for flux-kontext-pro (no 'model': 'schnell' here)
     inputs = {
         "image": image_input,
         "prompt": prompt,
-        "negative_prompt": negative_prompt,
-        "prompt_strength": float(strength),   # Controls how much of the original image is kept
-        "guidance_scale": guidance_scale,     # Controls how strongly the prompt is followed
-        "num_inference_steps": 30,            # Controls quality/speed tradeoff
+        "negative_prompt": negative_prompt or None,
+        "prompt_strength": float(strength),
+        "guidance_scale": guidance_scale,
+        "num_inference_steps": 30,
     }
 
     if width and height:
         inputs["width"] = int(width)
         inputs["height"] = int(height)
-
     if seed is not None:
         inputs["seed"] = seed
 
+    # prune Nones
     inputs = {k: v for k, v in inputs.items() if v is not None}
 
-    mid = model_id or IMG2IMG_MODEL
+    mid = (model_id or IMG2IMG_MODEL or DEFAULT_IMG2IMG)
+
+    # Helpful debug (shows up in Streamlit + terminal)
     try:
-        out = client.run(mid, input=inputs, use_file_output=False)
+        import streamlit as st
+        if hasattr(st, "warning"):
+            st.warning(f"Replicate model: {mid}")
+            st.json({k: (str(v)[:80] + "…" if hasattr(v, "read") else v) for k, v in inputs.items()})
+    except Exception:
+        pass
+
+    try:
+        # For flux-kontext-pro, pass the repo name; SDK chooses latest allowed version.
+        out = client.run(mid, input=inputs)
     except replicate.exceptions.ReplicateError as e:
+        # If you ever change IMG2IMG_MODEL and it 404s, fall back to DEFAULT_IMG2IMG
         if "404" in str(e):
-            out = client.run(DEFAULT_IMG2IMG, input=inputs, use_file_output=False)
+            out = client.run(DEFAULT_IMG2IMG, input=inputs)
         else:
             raise
-    return out[0] if isinstance(out, list) else out
+
+    # Replicate file-like output (has .url() / .read())
+    if hasattr(out, "url"):
+        return out.url()
+    if isinstance(out, list) and out and hasattr(out[0], "url"):
+        return out[0].url()
+    # Some models may return a plain URL string
+    return out
+
