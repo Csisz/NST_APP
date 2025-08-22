@@ -57,7 +57,7 @@ def generate_image_from_prompt_and_image(
 
     # (Optional) show exactly what we’re sending
     # st.warning(f"Replicate model: {mid}")
-    # st.json({k: ("<file>" if hasattr(v, "read") else v) for k, v in inputs.items()})
+    st.json({k: ("<file>" if hasattr(v, "read") else v) for k, v in inputs.items()})
 
     # ---- call Replicate (no version pin, no use_file_output) ----
     out = client.run("black-forest-labs/flux-kontext-pro", input=inputs)
