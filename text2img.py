@@ -82,18 +82,35 @@ def generate_image_from_prompt_and_image(
     model_id: str | None = None,
 ):
     client = replicate.Client(api_token=get_cfg("REPLICATE_API_TOKEN"))
+    # image_input = open(image_path_or_url, "rb") if os.path.exists(image_path_or_url) else image_path_or_url
+
+    # inputs = {
+    #     "image": image_input,
+    #     "prompt": prompt,
+    #     "aspect_ratio": "match_input_image",
+    #     "output_format": "jpg",
+    #     "safety_tolerance": 2,
+    #     "prompt_upsampling": True
+    # }
+    
+
+    # inputs = {k: v for k, v in inputs.items() if v is not None}
+
     image_input = open(image_path_or_url, "rb") if os.path.exists(image_path_or_url) else image_path_or_url
 
     inputs = {
-        "image": image_input,
+        "input_image": image_input,                      # <-- key change
         "prompt": prompt,
+        "negative_prompt": negative_prompt or None,
+        "prompt_strength": float(strength),             # 0.2–0.8
+        "guidance_scale": float(guidance_scale),        # 7–12
+        "num_inference_steps": 30,
         "aspect_ratio": "match_input_image",
         "output_format": "jpg",
         "safety_tolerance": 2,
-        "prompt_upsampling": True
+        "prompt_upsampling": True,
     }
-    
-
+    # prune Nones
     inputs = {k: v for k, v in inputs.items() if v is not None}
 
     mid = model_id or IMG2IMG_MODEL or DEFAULT_IMG2IMG
@@ -102,8 +119,12 @@ def generate_image_from_prompt_and_image(
     st.warning(f"Replicate model: {mid}")
     st.json({k: ("<file>" if hasattr(v, "read") else v) for k, v in inputs.items()})
 
+
+
         # ---- call Replicate (no version pin, no use_file_output) ----
-    out = client.run(mid, input=inputs)
+    # out = client.run(mid, input=inputs)
+    out = client.run("black-forest-labs/flux-kontext-pro", input=inputs)
+
 
     # ---- normalize return to a URL string, handling all SDK variants ----
     # 1) some models return a list
