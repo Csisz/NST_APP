@@ -1,27 +1,31 @@
+# --- MUST be the first lines in app.py ---
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"     # hide GPUs from TF
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"      # show errors only
+# prevent XLA’s GPU plugin from probing CUDA at all
+os.environ["TF_XLA_FLAGS"] = "--xla_gpu_cuda_data_dir="
+os.environ["XLA_FLAGS"] = "--xla_gpu_cuda_data_dir="
+
+import tensorflow as tf
+try:
+    tf.config.set_visible_devices([], "GPU")
+except Exception:
+    pass
+try:
+    tf.config.optimizer.set_jit(False)
+except Exception:
+    pass
+
+# now import the rest of your code that might import TF
+from utils import load_and_preprocess
+# ... other imports ...
+
+
 import numpy as np
 import tensorflow as tf
 from PIL import Image
 import streamlit as st
 import replicate 
-# ---- Force TensorFlow to run on CPU & quiet logs ----
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"     # hide all GPUs from TF
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"      # 0=all, 1=info, 2=warning, 3=error
-
-import tensorflow as tf
-
-# Extra safety: make absolutely sure no GPU is visible to TF runtime
-try:
-    tf.config.set_visible_devices([], "GPU")
-except Exception:
-    pass
-
-# Optional: disable XLA JIT to avoid extra CUDA/XLA chatter on some builds
-try:
-    tf.config.optimizer.set_jit(False)
-except Exception:
-    pass
 
 # Make Streamlit secrets available as env vars for modules that only read os.getenv()
 if hasattr(st, "secrets") and "REPLICATE_API_TOKEN" in st.secrets:
