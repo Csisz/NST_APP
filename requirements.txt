@@ -4,9 +4,8 @@ pillow
 matplotlib
 opencv-python-headless==4.10.0.84
 tensorflow==2.20.0rc0
-tensorflow-io-gcs-filesystem>=0.37.0
 requests
 python-dotenv
 streamlit-image-select
-replicate>=0.26.0
+replicate
 torch==2.5.1
