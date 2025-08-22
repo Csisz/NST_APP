@@ -514,9 +514,6 @@ else:
             except Exception as e:
                 st.error(f"Img2img failed: {e}")
 
-        if st.session_state.variation_result_url:
-            st.image(st.session_state.variation_result_url,
-                    caption="Stylized variation", use_container_width=True)
         
 if st.session_state.variation_result_url:
     url = str(st.session_state.variation_result_url)
