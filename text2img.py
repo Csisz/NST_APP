@@ -38,14 +38,21 @@ def generate_image_from_prompt_and_image(
     client = replicate.Client(api_token=get_cfg("REPLICATE_API_TOKEN"))
     image_input = open(image_path_or_url, "rb") if os.path.exists(image_path_or_url) else image_path_or_url
 
+    # inputs = {
+    #     "image": image_input,
+    #     "prompt": prompt,
+    #     "negative_prompt": negative_prompt,
+    #     "prompt_strength": float(strength),  
+    #     "guidance_scale": guidance_scale,    
+    #     "model": "schnell",                  
+    # }
+
     inputs = {
-        "image": image_input,
         "prompt": prompt,
-        "negative_prompt": negative_prompt,
-        "prompt_strength": float(strength),  
-        "guidance_scale": guidance_scale,    
-        "model": "schnell",                  
-    }
+        "input_image": image_input,
+        "output_format": "jpg"
+    }   
+    
 
     if width and height:
         inputs["aspect_ratio"] = "custom"
