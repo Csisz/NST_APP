@@ -176,9 +176,30 @@ def select_style(style_name: str):
 
 # ---- Cache the Keras model per style (prevents reload on every rerun) ----
 @st.cache_resource(show_spinner=False)
+# def get_model_for_style(style_name: str):
+#     weights = style_weights[style_name]
+#     return load_saved_model(weights)
+
+@st.cache_resource(show_spinner=False)
 def get_model_for_style(style_name: str):
+    # Build a fresh TF graph once per style to avoid stale global state
+    tf.keras.backend.clear_session()
+
     weights = style_weights[style_name]
-    return load_saved_model(weights)
+    model = load_saved_model(weights)   # returns a built keras.Model
+
+    # Wrap the Keras model in a tf.Module so inference is a stable callable
+    class _Infer(tf.Module):
+        def __init__(self, m):
+            super().__init__()
+            self.m = m
+
+        @tf.function  # graph the call (keeps Keras name scopes consistent)
+        def __call__(self, x):
+            return self.m(x, training=False)
+
+    return _Infer(model)
+
 
 
 # ---------------- Data ----------------
@@ -357,20 +378,55 @@ if not st.session_state.selected_style:
 
 st.subheader("3️⃣ Apply Style")
 
+# with centered_loader("🖌️ Applying style…"):
+#     model = get_model_for_style(st.session_state.selected_style)
+
+#     original_img, enhanced_img = enhance_image("temp_input.jpg")
+#     grayscale_img = grayscale_except_blue_yellow(original_img)
+
+#     def run_model(arr_or_path):
+#         content = load_and_preprocess(arr_or_path, is_array=True)
+#         out = model(tf.constant(content))[0].numpy()
+#         return np.clip(out * 255.0, 0, 255).astype(np.uint8)
+
+#     stylized = run_model(original_img)
+#     stylized2 = run_model(enhanced_img)
+#     stylized3 = run_model(grayscale_img)
+
 with centered_loader("🖌️ Applying style…"):
-    model = get_model_for_style(st.session_state.selected_style)
+    infer = get_model_for_style(st.session_state.selected_style)
 
     original_img, enhanced_img = enhance_image("temp_input.jpg")
     grayscale_img = grayscale_except_blue_yellow(original_img)
 
-    def run_model(arr_or_path):
-        content = load_and_preprocess(arr_or_path, is_array=True)
-        out = model(tf.constant(content))[0].numpy()
-        return np.clip(out * 255.0, 0, 255).astype(np.uint8)
+    def run_model(arr_or_path, infer_fn):
+        # load_and_preprocess returns [1,H,W,3] float32 in [0,1]
+        x = load_and_preprocess(arr_or_path, is_array=True)
+        # ensure proper dtype + shape
+        x = tf.convert_to_tensor(x, dtype=tf.float32)
+        if x.ndim == 3:  # just in case
+            x = tf.expand_dims(x, 0)
 
-    stylized = run_model(original_img)
-    stylized2 = run_model(enhanced_img)
-    stylized3 = run_model(grayscale_img)
+        y = infer_fn(x)                 # call the cached tf.Module
+        if isinstance(y, (list, tuple)):
+            y = y[0]
+        y = tf.clip_by_value(y, 0.0, 1.0)
+        out = (y[0].numpy() * 255.0).astype(np.uint8)
+        return out
+
+    try:
+        stylized  = run_model(original_img, infer)
+        stylized2 = run_model(enhanced_img, infer)
+        stylized3 = run_model(grayscale_img, infer)
+    except Exception as e:
+        # ultra-safe fallback: rebuild once if TF global state got borked
+        st.warning("Reloading model after a TF context error…")
+        st.cache_resource.clear()
+        infer = get_model_for_style(st.session_state.selected_style)
+        stylized  = run_model(original_img, infer)
+        stylized2 = run_model(enhanced_img, infer)
+        stylized3 = run_model(grayscale_img, infer)
+
 
 st.image(stylized, caption="Stylized Image", width=420)
 
