@@ -87,10 +87,10 @@ def generate_image_from_prompt_and_image(
     inputs = {
         "image": image_input,
         "prompt": prompt,
-        "negative_prompt": negative_prompt or None,
-        "prompt_strength": float(strength),
-        "guidance_scale": guidance_scale,
-        "num_inference_steps": 30,
+        "aspect_ratio": "match_input_image",
+        "output_format": "jpg",
+        "safety_tolerance": 2,
+        "prompt_upsampling": True
     }
     
 
