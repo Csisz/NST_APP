@@ -102,22 +102,23 @@ def generate_image_from_prompt_and_image(
     st.warning(f"Replicate model: {mid}")
     st.json({k: ("<file>" if hasattr(v, "read") else v) for k, v in inputs.items()})
 
+        # ---- call Replicate (no version pin, no use_file_output) ----
     out = client.run(mid, input=inputs)
 
-    print("DEBUG type(out):", type(out), "value:", out)
+    # ---- normalize return to a URL string, handling all SDK variants ----
+    # 1) some models return a list
+    if isinstance(out, (list, tuple)) and out:
+        out = out[0]
 
-    # If Replicate gives you a file-like object
+    # 2) file-like object with .url attribute (older/newer SDKs)
     if hasattr(out, "url"):
-        return out.url()
+        try:
+            return out.url()        # when .url is a method
+        except TypeError:
+            return out.url          # when .url is a string property
 
-    # If it gives you a list of file-like objects
-    if isinstance(out, list) and out and hasattr(out[0], "url"):
-        return out[0].url()
+    # 3) plain string URL (your current case)
+    return str(out)
 
-    # If it just gives you a plain URL string
-    if isinstance(out, str):
-        return out
-
-    return out
 
 

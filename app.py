@@ -489,31 +489,54 @@ else:
     #             st.error(f"Img2img failed: {e}")
     if st.button("Style Variations"):
         with centered_loader("Generating variation..."):
-            result = generate_image_from_prompt_and_image(
-                image_path_or_url=src,
-                prompt=prompt,
-                negative_prompt=negative or None,
-                strength=strength,       # slider value
-                model_id="black-forest-labs/flux-kontext-pro"
-            )
+            try:
+                result = generate_image_from_prompt_and_image(
+                    image_path_or_url=src,
+                    prompt=prompt,
+                    negative_prompt=negative or None,
+                    strength=float(strength),
+                    seed=None if seed == -1 else int(seed),
+                    model_id="black-forest-labs/flux-kontext-pro",
+                )
 
-        img_url = _normalize_replicate_output(result)
-        st.session_state.variation_result_url = img_url     # keep for later use/download
-        st.image(img_url, caption="Stylized variation", use_container_width=True)
+                # --- normalize to URL string ---
+                if isinstance(result, (list, tuple)) and result:
+                    result = result[0]
+                if hasattr(result, "url"):
+                    try:
+                        result = result.url()      # method in some SDKs
+                    except TypeError:
+                        result = result.url        # string property in others
+                img_url = str(result)
 
+                st.session_state.variation_result_url = img_url
 
+            except Exception as e:
+                st.error(f"Img2img failed: {e}")
+
+        if st.session_state.variation_result_url:
+            st.image(st.session_state.variation_result_url,
+                    caption="Stylized variation", use_container_width=True)
+        
 if st.session_state.variation_result_url:
-    url = st.session_state.variation_result_url
-    # show again or offer download
+    url = str(st.session_state.variation_result_url)
+
     st.image(url, caption="Result", use_container_width=True)
 
-    # optional: save locally or to tmp for a download button
+    # optional download
     import requests, tempfile, os
-    r = requests.get(url, timeout=60)
-    r.raise_for_status()
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as f:
-        f.write(r.content)
-        tmp_path = f.name
-    with open(tmp_path, "rb") as f:
-        st.download_button("Download stylized image", f, file_name="stylized.jpg")
-    os.remove(tmp_path)
+    try:
+        r = requests.get(url, timeout=60)
+        r.raise_for_status()
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as f:
+            f.write(r.content)
+            tmp_path = f.name
+        with open(tmp_path, "rb") as f:
+            st.download_button("Download stylized image", f, file_name="stylized.jpg")
+    finally:
+        try:
+            os.remove(tmp_path)
+        except Exception:
+            pass
+
+
