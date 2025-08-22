@@ -92,6 +92,7 @@ def generate_image_from_prompt_and_image(
         "guidance_scale": guidance_scale,
         "num_inference_steps": 30,
     }
+    
 
     inputs = {k: v for k, v in inputs.items() if v is not None}
 
@@ -101,13 +102,22 @@ def generate_image_from_prompt_and_image(
     st.warning(f"Replicate model: {mid}")
     st.json({k: ("<file>" if hasattr(v, "read") else v) for k, v in inputs.items()})
 
-    # Run – no version, no use_file_output flag
     out = client.run(mid, input=inputs)
 
-    # Return a URL
+    print("DEBUG type(out):", type(out), "value:", out)
+
+    # If Replicate gives you a file-like object
     if hasattr(out, "url"):
         return out.url()
+
+    # If it gives you a list of file-like objects
     if isinstance(out, list) and out and hasattr(out[0], "url"):
         return out[0].url()
+
+    # If it just gives you a plain URL string
+    if isinstance(out, str):
+        return out
+
     return out
+
 
