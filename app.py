@@ -4,6 +4,24 @@ import tensorflow as tf
 from PIL import Image
 import streamlit as st
 import replicate 
+# ---- Force TensorFlow to run on CPU & quiet logs ----
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"     # hide all GPUs from TF
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"      # 0=all, 1=info, 2=warning, 3=error
+
+import tensorflow as tf
+
+# Extra safety: make absolutely sure no GPU is visible to TF runtime
+try:
+    tf.config.set_visible_devices([], "GPU")
+except Exception:
+    pass
+
+# Optional: disable XLA JIT to avoid extra CUDA/XLA chatter on some builds
+try:
+    tf.config.optimizer.set_jit(False)
+except Exception:
+    pass
 
 # Make Streamlit secrets available as env vars for modules that only read os.getenv()
 if hasattr(st, "secrets") and "REPLICATE_API_TOKEN" in st.secrets:
