@@ -5,8 +5,10 @@ load_dotenv()
 
 # DEFAULT_TXT2IMG = "replicate/van-gogh-flux"
 # DEFAULT_IMG2IMG = "replicate/van-gogh-flux"   # full version id should come from .env
-DEFAULT_TXT2IMG = "black-forest-labs/flux-kontext-pro:1d201198f8604c46a30829f17fe80fe6e914eaecba01ff62c5aa16a18f3d4b85"
-DEFAULT_IMG2IMG = "black-forest-labs/flux-kontext-pro:1d201198f8604c46a30829f17fe80fe6e914eaecba01ff62c5aa16a18f3d4b85"
+DEFAULT_TXT2IMG = "black-forest-labs/flux-kontext-pro"
+DEFAULT_IMG2IMG = "black-forest-labs/flux-kontext-pro"
+
+
 
 import os
 try:
@@ -82,7 +84,6 @@ def generate_image_from_prompt_and_image(
     client = replicate.Client(api_token=get_cfg("REPLICATE_API_TOKEN"))
     image_input = open(image_path_or_url, "rb") if os.path.exists(image_path_or_url) else image_path_or_url
 
-    # Inputs for flux-kontext-pro (no 'model': 'schnell' here)
     inputs = {
         "image": image_input,
         "prompt": prompt,
@@ -92,41 +93,21 @@ def generate_image_from_prompt_and_image(
         "num_inference_steps": 30,
     }
 
-    if width and height:
-        inputs["width"] = int(width)
-        inputs["height"] = int(height)
-    if seed is not None:
-        inputs["seed"] = seed
-
-    # prune Nones
     inputs = {k: v for k, v in inputs.items() if v is not None}
 
-    mid = (model_id or IMG2IMG_MODEL or DEFAULT_IMG2IMG)
+    mid = model_id or IMG2IMG_MODEL or DEFAULT_IMG2IMG
 
-    # Helpful debug (shows up in Streamlit + terminal)
-    try:
-        import streamlit as st
-        if hasattr(st, "warning"):
-            st.warning(f"Replicate model: {mid}")
-            st.json({k: (str(v)[:80] + "…" if hasattr(v, "read") else v) for k, v in inputs.items()})
-    except Exception:
-        pass
+    # (Optional) show exactly what we’re sending
+    st.warning(f"Replicate model: {mid}")
+    st.json({k: ("<file>" if hasattr(v, "read") else v) for k, v in inputs.items()})
 
-    try:
-        # For flux-kontext-pro, pass the repo name; SDK chooses latest allowed version.
-        out = client.run(mid, input=inputs)
-    except replicate.exceptions.ReplicateError as e:
-        # If you ever change IMG2IMG_MODEL and it 404s, fall back to DEFAULT_IMG2IMG
-        if "404" in str(e):
-            out = client.run(DEFAULT_IMG2IMG, input=inputs)
-        else:
-            raise
+    # Run – no version, no use_file_output flag
+    out = client.run(mid, input=inputs)
 
-    # Replicate file-like output (has .url() / .read())
+    # Return a URL
     if hasattr(out, "url"):
         return out.url()
     if isinstance(out, list) and out and hasattr(out[0], "url"):
         return out[0].url()
-    # Some models may return a plain URL string
     return out
 
