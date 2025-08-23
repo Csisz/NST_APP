@@ -235,9 +235,9 @@ style_weights = {
 gallery_images = {
     "Budapest Parliament (Sunset)": "images/budapest_parliament_sunset.jpg",
     "Lakeside Sunset": "images/lakeside_sunset.jpg",
-    "Mountain Reflection": "images/mountain_reflection.jpg",
+    "Lake Balaton Tihany": "images/lake_balaton_tihany.jpg",
     "Budapest Parliament (Night)": "images/budapest_parliament_night.jpeg",
-    "Lake Balaton (Aerial)": "images/lake_balaton_aerial.jpg",
+    "Lake Balaton": "images/lake_balaton_aerial.jpg",
 }
 
 prompt_presets = {
