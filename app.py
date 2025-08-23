@@ -1,25 +1,20 @@
-# --- MUST be the first lines in app.py ---
+# ---- MUST be the first lines in app.py (before any TensorFlow import) ----
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"     # hide GPUs from TF
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"      # show errors only
-# prevent XLA’s GPU plugin from probing CUDA at all
-os.environ["TF_XLA_FLAGS"] = "--xla_gpu_cuda_data_dir="
-os.environ["XLA_FLAGS"] = "--xla_gpu_cuda_data_dir="
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"   # hide GPUs from TF
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"    # errors only (use "2" to keep warnings)
 
 import tensorflow as tf
 try:
+    # make absolutely sure no GPU is visible and XLA JIT is off
     tf.config.set_visible_devices([], "GPU")
-except Exception:
-    pass
-try:
     tf.config.optimizer.set_jit(False)
 except Exception:
     pass
 
-# now import the rest of your code that might import TF
-from utils import load_and_preprocess
-# ... other imports ...
+# now import anything else that might import TensorFlow
 
+
+from utils import load_and_preprocess
 
 import numpy as np
 import tensorflow as tf
